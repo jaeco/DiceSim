@@ -1,11 +1,10 @@
-# Build log: dice notation parser
+# Build log: DiceSim
 
-Notes on how the regex in `dice.js` got to its current form. Kept because the path
-mattered more than the destination, and because I want to be able to explain why each
-piece is the way it is.
+Notes on how `dice.js` got to its current form. Kept because the path mattered more than
+the destination, and because I want to be able to explain why each piece is the way it is.
 
-Goal: parse strings like `3d6+2`, `d20`, `10d6`, `2d8-1` into count, sides, operator,
-and modifier.
+Goal: parse strings like `3d6+2`, `d20`, `10d6`, `2d8-1` into count, sides, operator, and
+modifier, then roll them.
 
 Final pattern:
 
@@ -90,6 +89,55 @@ separate lines. Those flags are right for that tool and wrong for my code:
 
 Only `i` belongs in the file. The flags a test harness needs are not the flags production
 code needs.
+
+---
+
+## Bugs after the regex, in the roller
+
+**8. A function that prints isn't a function that returns.** My first `parseNotation`
+logged the four values and returned nothing, so the caller got `undefined`. Printing is
+debugging; returning is building.
+
+**9. Object versus array for the return.** I chose an object so the caller doesn't need
+prior knowledge of field order to use the function. The fields are heterogeneous, two of
+them are optional, and I expect to add more later, all of which favor names over
+positions. An array would be the right call for something homogeneous and ordered, which
+is exactly what individual die results will be when I add them.
+
+**10. Missing defaults produced `NaN` instead of failing.** `parseInt("")` is `NaN`, so
+`d20` parsed to a count of `NaN`. Then `for (let i = 0; i < NaN; i++)` is false
+immediately, so the loop ran zero times and the roll silently returned 0. Same family as
+the `d100` truncation: a wrong answer with no error is worse than a crash.
+
+**11. You cannot store an operator in a variable.** I tried to write `total operand
+modifier`. In JavaScript `+` is syntax, not a value, so there's no way to slot a variable
+into that position. I looked for something like a generic evaluator and found `eval`,
+which would work in one line and which I deliberately rejected: `eval` executes arbitrary
+code, and dice notation in a virtual tabletop is untrusted input typed by strangers. The
+`switch` I used instead is effectively a whitelist of the four operations I permit, and
+that's the property I want.
+
+**12. Absent is not the same as invalid.** My first `switch` threw on any unrecognized
+operand, which meant `3d6` and `d20` crashed. Most rolls have no modifier at all. Then,
+after removing the throw, I left no `default` case, so the function fell off the end and
+returned `undefined` for those same rolls. The correct behavior is to return the plain
+total.
+
+**13. `isNaN` is the wrong way to check for null.** Guarding the parser, I wrote
+`isNaN(regex.exec(notation))`. `isNaN` converts its argument to a number first, and
+`Number(null)` is `0`, which is not NaN, so the guard never fired. I was asking a numeric
+question about a value that was never numeric.
+
+**14. Throw at detection, catch at the boundary.** I considered wrapping the parser in
+try/catch, but catching an error I could simply prevent is treating a bug like weather.
+`parseNotation` can detect bad input but can't know what the caller wants to do about it,
+so it throws. A UI or command handler is the right place to catch and decide what the user
+sees.
+
+I chose `SyntaxError` for the thrown error because that's what `JSON.parse` throws for a
+malformed input string, and this is the same situation: a parser handed something that
+isn't valid in its grammar. A custom error class extending `Error` would be the next step
+if callers ever needed to catch this specific failure rather than any `SyntaxError`.
 
 ---
 

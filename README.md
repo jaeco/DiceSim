@@ -1,4 +1,8 @@
 # DiceSim
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=nodedotjs&logoColor=white)
+![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen?style=flat)
+![Dice](https://img.shields.io/badge/roll-3d6%2B2-red?style=flat)
 
 A dice notation parser and roller in JavaScript. Give it a string like `3d6+2` and it
 rolls the dice and returns the result.
@@ -11,7 +15,7 @@ here, including every bug I hit and why the code is shaped the way it is.
 ## Usage
 
 ```bash
-node dice.js
+node DiceSim.js
 ```
 
 ```javascript

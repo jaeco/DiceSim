@@ -50,5 +50,3 @@ function roll(notation) {
 
     }
 }
-
-console.log(roll("banana"));
